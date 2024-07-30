@@ -1,7 +1,6 @@
 package com.bunsen.tanklevelapi.service;
 
 import com.bunsen.tanklevelapi.api.body.TankLevelBody;
-import com.bunsen.tanklevelapi.model.Tank;
 import com.google.firebase.database.*;
 import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
@@ -13,23 +12,39 @@ public class FirebaseListenerService {
     private final FirebaseDatabase firebaseDatabase;
     private static final Logger logger = LoggerFactory.getLogger(FirebaseListenerService.class);
 
-    public FirebaseListenerService(FirebaseDatabase firebaseDatabase, TankLevelService tankLevelService) {
+    public FirebaseListenerService(FirebaseDatabase firebaseDatabase) {
         this.firebaseDatabase = firebaseDatabase;
-        if (firebaseDatabase == null) {
-            logger.error("FirebaseDatabase instance is null");
-        }
     }
 
     @PostConstruct
     public void initialize() {
-        logger.debug("Initializing Firebase listener");
         DatabaseReference ref = firebaseDatabase.getReference("/tanks/levels/data");
-
-        ref.addValueEventListener(new ValueEventListener() {
+        ref.addChildEventListener(new ChildEventListener() {
             @Override
-            public void onDataChange(DataSnapshot dataSnapshot) {
-                logger.debug("Data changed: " + dataSnapshot.getValue());
-                // Existing implementation
+            public void onChildAdded(DataSnapshot dataSnapshot, String prevChildKey) {
+                String tankId = dataSnapshot.getKey();
+                TankLevelBody data = dataSnapshot.getValue(TankLevelBody.class);
+                if (data != null) {
+                    data.setId(Long.parseLong(tankId));
+                    saveData(data);
+                }
+            }
+
+            @Override
+            public void onChildChanged(DataSnapshot dataSnapshot, String prevChildKey) {
+                onChildAdded(dataSnapshot, prevChildKey);
+            }
+
+            @Override
+            public void onChildRemoved(DataSnapshot dataSnapshot) {
+                logger.info(String.valueOf(dataSnapshot));
+                // Handle removal if needed
+            }
+
+            @Override
+            public void onChildMoved(DataSnapshot dataSnapshot, String prevChildKey) {
+                logger.info(String.valueOf(dataSnapshot));
+                // Handle move if needed
             }
 
             @Override
@@ -39,11 +54,9 @@ public class FirebaseListenerService {
         });
     }
 
-    private void saveData(TankLevelBody tankLevelData) {
-        logger.info("Most recent data: " + tankLevelData);
-        Tank tank = new Tank();
-        tank.setId(tankLevelData.getId());
-        tankLevelData.setTank(tank);
-//        tankLevelService.saveTankLevelData(tankLevelData);
+    private void saveData(TankLevelBody data) {
+        logger.info(String.valueOf(data));
+        // Implement your logic to save the data
+        // This could involve saving to a database, file, or other storage
     }
 }

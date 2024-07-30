@@ -8,6 +8,8 @@ import java.math.BigDecimal;
 @Data
 public class TankLevelBody {
     private double percentageLevel;
+    private Long id;
+    private Long timestamp;
     private String comment;
     private String latitude;
     private String longitude;
